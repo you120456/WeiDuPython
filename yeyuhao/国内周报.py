@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import pandas as pd
-import mysql.connector
 import datetime
 import warnings
 

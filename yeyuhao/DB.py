@@ -4,7 +4,6 @@
 
 
 import pymysql
-import mysql.connector
 import datetime
 import pandas as pd
 import warnings
