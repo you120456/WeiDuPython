@@ -31,6 +31,8 @@ from os.path import basename
 from smtplib import SMTP_SSL
 from email import encoders
 
+
+
 # 自动修改月初日期
 today = date.today()
 yesterday = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -698,7 +700,9 @@ df9.to_excel(writer, sheet_name='tl', index=False)
 df10.to_excel(writer, sheet_name='sp', index=False)
 writer.close()
 
-
+#美化报表
+# from excel导出美化 import beautify_excel
+# beautify_excel('./{0}{1}自动日报.xlsx'.format(yesterday,"巴基斯坦"))
 
 
 
