@@ -36,6 +36,7 @@ from os.path import basename
 from smtplib import SMTP_SSL
 from email import encoders
 
+# 自动修改月初日期
 today = date.today()
 yesterday = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
 if today.day <= 26:
@@ -64,7 +65,7 @@ else: first_day = today.replace(day = 26).strftime("%Y-%m-%d")
 # In[4]:
 
 
-#巴基斯坦
+#巴基斯坦数仓
 server1 = SSHTunnelForwarder(
     ('161.117.0.173',22),  # 这里写入B 跳板机IP、端口
     ssh_username='liufengfang',  # 跳板机 用户名
@@ -83,6 +84,7 @@ conn_ods = pymysql.connect(
 )
 
 
+# sql,需替换组别，逾期天数
 架构表="""
 SELECT pt_date,
                 SUBSTRING_INDEX(uo.asset_group_name,',',-1) `asset_group_name`,
@@ -502,10 +504,7 @@ GROUP BY 1,2
 """.format(first_day+" 00:00:00")
 dfe = pd.read_sql(外呼,conn_ods)
 
-
-# In[11]:
-
-
+# b组时间
 b时间 = """
 SELECT
         uo.`name` as '催员名',
@@ -531,17 +530,10 @@ FROM
 dff = pd.read_sql(b时间,conn_ods)
 
 
-# In[12]:
-
-
+#合并表格
 df1 = df.merge(dfa,left_on = ["pt_date","user_id"],right_on=["分案日期","催员ID"],how="left")
 df2 = df1.merge(dfc,left_on = ["pt_date","user_id"],right_on=["date(work_day)","user_id"],how="left")
 df3 = df2.merge(dfe,left_on = ["pt_date","user_id"],right_on=["日期","id"],how="left")
-
-
-# In[13]:
-
-
 df4=df3.groupby(["asset_group_name","manager_user_name","leader_user_name","组员","user_id"],as_index= False).agg(新案分案本金 = ("新案分案本金",'sum'),
                                                                                                   新案回款本金 =("新案回款本金","sum"),
                                                                                                   新案展期费用=("新案展期费用","sum"),
@@ -555,29 +547,17 @@ df4=df3.groupby(["asset_group_name","manager_user_name","leader_user_name","组�
                                                                                                  )
 
 
-# In[14]:
-
-
+#添加进入b组时间，如有其它高账龄组，需要修改sql，并在下方列别添加对应组别。
 df5 = df4.merge(dfb,on="user_id",how = "left").merge(dfd,on="user_id",how = "left").merge(dff,on="user_id",how = "left")
 df5.loc[~df5["asset_group_name"].isin(["B1 Group", "B2 Group"]), "首次晋升B队列日期"] = None
 df6 = df5[(df5["删除时间"]>=datetime.strptime(first_day,'%Y-%m-%d').date()) | df5["删除时间"].isnull()]
 
 
-# In[15]:
-
-
 df6["Repaid principal adjust"]=df6['新案回款本金']+df6['新案展期费用']
 df6["Individual Collection Rate"]=(df6['新案回款本金']+df6['新案展期费用'])/df6['新案分案本金']
 
-
-# In[16]:
-
-
 df6["Newly enrolled Yes/ No"]= (date.today() - timedelta(days=1)-df6["min_date"]).dt.days.apply(lambda x: 'YES' if x < 30 else 'NO')
 df6["Gross collectiion ranking"]=df6.groupby(["asset_group_name"])["总实收"].rank(ascending=False,method='first')
-
-
-# In[17]:
 
 def calculate_range1(row):
     max_m = df6[df6['asset_group_name'] == row['asset_group_name']]["Gross collectiion ranking"].max()
@@ -596,15 +576,9 @@ def calculate_range1(row):
 df6["Ranking intervals"] = df6.apply(calculate_range1, axis=1)
 
 
-# In[18]:
-
-
 df6["Average daily number of calls"]=df6["外呼次数"]/df6["总天数"]
 df6["Average daily talk time"]=df6["通时"]/df6["总天数"]/60
 df6["To B Group First"]=df6["首次晋升B队列日期"].apply(lambda x: "YES" if pd.notna(x) and x >= pd.to_datetime(first_day) else ("NO" if pd.notna(x) else None))
-
-
-# In[19]:
 
 
 df6["催回率排名"] = df6.groupby("asset_group_name")["Individual Collection Rate"].rank(ascending=False, method='first')
@@ -630,10 +604,7 @@ def calculate_range11(row):
 df6["Integrated Ranking interval"] = df6.apply(calculate_range11, axis=1)
 
 
-# In[20]:
-
-
-#大于7天重新排名
+#上线大于7天重新排名
 df6_filtered = df6[df6['总天数'] > 7]
 try:
     df6_filtered['Gross collectiion ranking'] = df6_filtered.groupby(["asset_group_name"])["总实收"].rank(ascending=False,method='first')
@@ -684,9 +655,6 @@ df7 = df6[["asset_group_name","manager_user_name","leader_user_name","组员","N
      "新人天数","老人天数","To B Group First","首次晋升B队列日期",'Integrated Ranking','Integrated Ranking interval']]
 
 
-# In[22]:
-
-
 df8=df7.loc[df7["总天数"]>7,:]
 g1 = df7.groupby(["asset_group_name","manager_user_name","leader_user_name"],as_index=False)["新案分案本金","Repaid principal adjust","总实收","总天数"].sum()
 g2 = df8.groupby(["asset_group_name","manager_user_name","leader_user_name"],as_index=False)["新案分案本金","Repaid principal adjust","总实收","总天数"].sum()
@@ -698,15 +666,9 @@ g2["Ave.Gross collection"] = g2["总实收"]/g2["总天数"]
 g2["Rank3"] = g2.groupby("asset_group_name")["Ave.Gross collection"].rank(ascending=True, method='first')
 
 
-# In[23]:
-
-
 df9 = g1[['asset_group_name', 'manager_user_name', 'leader_user_name','Team Collection Rate1',
        'Rank1']].merge(g2[['asset_group_name', 'manager_user_name', 'leader_user_name','Team Collection Rate2(Online days >7)', 'Rank2',
        'Ave.Gross collection', 'Rank3']],on=['asset_group_name', 'manager_user_name', 'leader_user_name'],how="left")
-
-
-# In[24]:
 
 
 m1 = df7.groupby(["asset_group_name","manager_user_name"],as_index=False)["新案分案本金","Repaid principal adjust","总天数"].sum()
@@ -715,14 +677,7 @@ m1["Team Collection Rate1"] = m1["Repaid principal adjust"]/m1["新案分案本�
 m2["Team Collection Rate2"] = m2["Repaid principal adjust"]/m2["新案分案本金"]
 
 
-# In[25]:
-
-
 df10 = m1[['asset_group_name', 'manager_user_name','Team Collection Rate1']].merge(m2,on=['asset_group_name', 'manager_user_name'],how = "left")
-
-
-# In[26]:
-
 
 df7.columns = ['Group','Supervisor','Team Leader','Collection Executive',
                'Newly enrolled Yes/ No','Min Online Date','dimission_date','deletion_tate','Gross collection',
@@ -733,22 +688,13 @@ df7.columns = ['Group','Supervisor','Team Leader','Collection Executive',
                'Integrated Ranking','Integrated Ranking interval']
 
 
-# In[27]:
-
-
 df9.columns=['Group','Supervisor','Team Leader', 'Team Collection Rate1', 'Rank1',
        'Team Collection Rate2(Online days >7)', 'Rank2',
        'Ave.Gross collection', 'Rank3']
 
-
-# In[28]:
-
-
 df10.columns=['Group','Supervisor','Team Collection Rate1','Divided principal adjust >7',
               'Repaid principal adjust >7','Online days >7','Team Collection Rate2 >7']
 
-
-# In[29]:
 
 
 writer = pd.ExcelWriter('./{0}{1}自动日报.xlsx'.format(yesterday,"巴基斯坦"))
@@ -767,7 +713,6 @@ email_variable = df_email.loc[df_email['key'] == '邮箱', 'value'].values[0]
 email_password = df_email.loc[df_email['key'] == '密码', 'value'].values[0]
 
 
-# In[ ]:
 def send_email(to_email,email_variable,email_password):
 # 邮件主题
     mail_title = '{0}{1}自动日报.xlsx'.format(yesterday,"巴基斯坦")
