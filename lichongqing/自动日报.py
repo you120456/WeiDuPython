@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-#!/usr/bin/env python
 a='因不可抗力因素温和催收,正常撤案,冻结债务人,冻结'
 b='撤销分案-23652,稽核异常撤案,风险上报转客维,稽核投诉倾向撤案,转客维'
 c='分案不均,拨打受限组内互换案件,分案前已结清,恢复案件撤案,分案不均补案,存在逾期案件时撤d-2案件'
@@ -30,6 +29,8 @@ from email.header import Header
 from os.path import basename
 from smtplib import SMTP_SSL
 from email import encoders
+
+
 
 # 自动修改月初日期
 today = date.today()
@@ -698,7 +699,9 @@ df9.to_excel(writer, sheet_name='tl', index=False)
 df10.to_excel(writer, sheet_name='sp', index=False)
 writer.close()
 
-
+#美化报表
+# from excel导出美化 import beautify_excel
+# beautify_excel('./{0}{1}自动日报.xlsx'.format(yesterday,"巴基斯坦"))
 
 
 

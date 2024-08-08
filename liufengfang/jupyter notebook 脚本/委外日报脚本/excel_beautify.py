@@ -82,7 +82,7 @@ def beautify_excel(file_path):
     # 保存工作簿
     try:
         wb.save(file_path)
-        print(f"{file_path} 已成功美化")
+        # print(f"{file_path} 已成功美化")
     except Exception as e:
         print(f"保存工作簿时出错: {e}")
 
