@@ -173,6 +173,10 @@ print("数据结束运行", datetime.datetime.now())
 print('excel_filename::' + out_path + excel_filename )
 print(out_path +  "印尼电催新周报{0}-{1}.xlsx".format(str(time_start)[5:10], str(time_end - datetime.timedelta(1))[5:10]))
 
+import excel_beatful
+
+excel_beatful.beautify_excel(out_path+excel_filename)
+
 # =============================================================================
 # 邮件发送
 # =============================================================================
