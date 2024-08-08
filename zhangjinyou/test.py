@@ -45,6 +45,7 @@ sql_day_uo = '''SELECT pt_date as '日期',
 day_uo_df = mysql_config.indonesia_bd_engine_read(sql_day_uo, database='fox_dw')  # 每日架构查询
 print(day_uo_df)
 
+print('TEST Down')
 # =============================================================================
 # 数据输出
 # =============================================================================
