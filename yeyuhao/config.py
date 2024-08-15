@@ -1,8 +1,3 @@
-# 数据库配置
-# !/usr/bin/env python
-# coding: utf-8
-
-
 import pymysql
 # import mysql.connector
 import datetime
@@ -30,6 +25,7 @@ from sshtunnel import SSHTunnelForwarder
 #     temp_df = pd.read_sql(sql, engine)
 #     engine.close()
 #     return temp_df
+
 
 def fox_engine(sql,
                user='yeyuhao',
