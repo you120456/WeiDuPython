@@ -5,7 +5,7 @@ import pandas as pd
 import datetime
 import warnings
 
-import bd
+import config
 
 warnings.filterwarnings("ignore")
 print("印尼周报自动化,开始运行：", datetime.datetime.now())

@@ -2,18 +2,19 @@
 # coding: utf-8
 
 import pandas as pd
+import mysql.connector
 import datetime
 import warnings
 
-import bd
+import config
 
 warnings.filterwarnings("ignore")
-print("印尼周报自动化,开始运行：", datetime.datetime.now())
+print("国内周报自动化,开始运行：", datetime.datetime.now())
 now = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 time_end = now - datetime.timedelta(0)
 time_start = now - datetime.timedelta(7)
-time_start = now.replace(year=2024, month=7, day=1)  # 数据开始日期
-time_end = now.replace(year=2024, month=7, day=11)  # 数据截止日期+1day
+# time_start = now.replace(year=2024, month=8, day=1)  # 数据开始日期
+# time_end = now.replace(year=2024, month=8, day=8)  # 数据截止日期+1day
 month_start = time_start.replace(day=1, hour=6, minute=0, second=0, microsecond=0)
 print(time_start.date())
 # month_start = now.replace(year=2024, month=1, day=1)   # 本月初开始日期
@@ -41,9 +42,12 @@ sql_day_uo = '''SELECT pt_date as '日期',
                 FROM `dwd_fox_collect_user_df`
                                 where pt_date >='{2}'
                                 AND pt_date <'{1}'
-                    '''.format(str(month_start)[0:10], str(time_end - datetime.timedelta(1))[0:10], str(time_end - datetime.timedelta(2))[0:10])
+
+                    '''.format(str(month_start)[0:10], str(time_end - datetime.timedelta(1))[0:10],
+                               str(time_end - datetime.timedelta(2))[0:10])
 day_uo_df = config.chinese_bd_engine_read(sql_day_uo, database='fox_dw')  # 每日架构查询
 
+# day_uo_df.to_excel(r"D:\DailyReport\国内报表\周报\1.xlsx")
 
 
 day_uo_df_month_end = day_uo_df[day_uo_df['日期'] == time_end.date() - datetime.timedelta(1)]
@@ -99,6 +103,9 @@ work_user['上线'] = 1
 user_info = pd.merge(user_info, work_user[['催员ID', '组别', '上线']], on=['催员ID', '组别'], how='left')
 user_info = user_info[user_info['上线'] == 1]
 user_info.sort_values(by="日期", ascending=False, inplace=True)
+user_info.to_excel(r"D:\DailyReport\国内报表\周报\1.xlsx")
+
+
 # 字段一小组人数计算（小组人数-所在组数）
 def Columns1(user_info):
     temp_df = user_info[['组别', '是否新人', '主管', '组长']].copy()
@@ -128,10 +135,11 @@ def Columns1(user_info):
     temp_df[['组数', '催员数']] = temp_df[['组数', '催员数']].astype(str)
     temp_df['人数/组数'] = temp_df['催员数'] + '-' + temp_df['组数']
     return temp_df
-finish_df = Columns1(user_info)
-finish_df['匹配字段'] = finish_df['组别']+finish_df['是否新人']+finish_df['主管']
-finish_df = finish_df[['组别', '是否新人', '主管', '匹配字段', '人数/组数']]
 
+
+finish_df = Columns1(user_info)
+finish_df['匹配字段'] = finish_df['组别'] + finish_df['是否新人'] + finish_df['主管']
+finish_df = finish_df[['组别', '是否新人', '主管', '匹配字段', '人数/组数']]
 
 # 实收统计
 sql_collect_recovery = '''SELECT 
@@ -170,6 +178,7 @@ def Columns2(collect_recovery_df, user_info, finish_df):
     temp_df = temp_df[['组别', '是否新人', '主管', '日人均实收']]
     finish_df = pd.merge(finish_df, temp_df, on=['组别', '是否新人', '主管'], how='left')
     return finish_df
+
 
 finish_df = Columns2(collect_recovery_df, user_info, finish_df)
 
@@ -229,12 +238,12 @@ sql_new_misson_log = '''
                         ) rpa -- 催回本金表
                         on a.分案ID = rpa.mission_log_id
                     where  1=1
-                    
+
                     and a.`组别` != '预提醒组'
                         -- 剔除请假当天分案
                     and NOT ( a.`请假状态`in (4,6,5,7))     
                         -- 月初请假保留老案
-                    
+
                     AND ((a.`分案时资产逾期天数` = 1 AND a.`组别` LIKE "A组%" ) 
                                     OR(a.`分案时资产逾期天数` = 1 AND a.`组别` LIKE "S1-1组%" ) 
                                     OR(a.`分案时资产逾期天数` = 1 AND a.`组别` LIKE "S1组" ) 
@@ -246,8 +255,8 @@ sql_new_misson_log = '''
                                      OR ( a.`分案时资产逾期天数` in (1,31,46) AND a.`组别` in ("C组",'天津调解M2'))
                                      OR (a.`分案时资产逾期天数` in (1,61) AND a.`组别` in ("D组",'天津调解M3'))
                                                 )
-                    
-                    
+
+
                     -- 剔除撤案原因不在统计范围内的案件
                     and NOT (a.撤案原因 in ('拨打受限组内互换案件','恢复案件撤案','分案不均','分案不均补案','分案前已结清','D0撤案','存在逾期案件时撤预提醒案件','存在到期案件时撤预提醒案件') and a.撤案原因 IS NOT NULL and a.撤案时间 IS NOT NULL )
                     and NOT (a.撤案原因 in ('冻结债务人','超期案件协商还款','因不可抗力因素温和催收','冻结') and a.撤案时间 IS NOT NULL and a.撤案原因 IS NOT NULL and rpa.`催回金额` IS  NULL )
@@ -309,7 +318,7 @@ sql_new_misson_log = '''
                     GROUP BY cr.mission_log_id
                         ) rpa -- 催回本金表
                         on a.分案ID = rpa.mission_log_id
-                        
+
                     where  1=1
                     and a.`组别` = '预提醒组'
                         -- 剔除请假当天分案
@@ -381,12 +390,12 @@ sql_new_D1_misson_log = '''
                                                 on a.分案ID = rpa.mission_log_id
                                                                         and DATE(a.分案时间) = DATE(rpa.repay_date)
                                             where  1=1
-                                            
+
                                             and a.`组别` != '预提醒组'
                                                 -- 剔除请假当天分案
                                             and NOT ( a.`请假状态`in (4,6,5,7))     
                                                 -- 月初请假保留老案
-                                            
+
                                             AND ((a.`分案时资产逾期天数` = 1 AND a.`组别` LIKE "A组%" ) 
                                                     OR(a.`分案时资产逾期天数` = 1 AND a.`组别` LIKE "S1-1组%" ) 
                                                                                     OR(a.`分案时资产逾期天数` = 1 AND a.`组别` LIKE "S1组" ) 
@@ -398,8 +407,8 @@ sql_new_D1_misson_log = '''
                                                                                      OR ( a.`分案时资产逾期天数` in (1,31,46) AND a.`组别` in ("C组",'天津调解M2'))
                                                                                      OR (a.`分案时资产逾期天数` in (1,61) AND a.`组别` in ("D组",'天津调解M3'))
                                                                         )
-                                            
-                                            
+
+
                                             -- 剔除撤案原因不在统计范围内的案件
                                             and NOT (a.撤案原因 in ('拨打受限组内互换案件','恢复案件撤案','分案不均','分案不均补案','分案前已结清','D0撤案','存在逾期案件时撤预提醒案件','存在到期案件时撤预提醒案件') and a.撤案原因 IS NOT NULL and a.撤案时间 IS NOT NULL )
                                             and NOT (a.撤案原因 in ('冻结债务人','超期案件协商还款','因不可抗力因素温和催收','冻结') and a.撤案时间 IS NOT NULL and a.撤案原因 IS NOT NULL and rpa.`催回金额` IS  NULL )
@@ -532,7 +541,7 @@ sql_misson_log = '''
                     ) rpa -- 催回本金表
                     on a.分案ID = rpa.mission_log_id
                 where  1=1
-                
+
                 and a.`组别` != '预提醒组'
                     -- 剔除请假当天分案
                 and NOT (day(a.`分案时间`)>1 and a.`请假状态`in (4,6,5,7))
@@ -550,7 +559,7 @@ sql_misson_log = '''
                                                                      OR (a.`分案时资产逾期天数` in (1,61) AND a.`组别` in ("D组",'天津调解M3'))
                                             )
                                 )
-                
+
                 -- 剔除撤案原因不在统计范围内的案件
                 and NOT (a.撤案原因 in ('拨打受限组内互换案件','恢复案件撤案','分案不均','分案不均补案','分案前已结清','D0撤案','存在逾期案件时撤预提醒案件','存在到期案件时撤预提醒案件') and a.撤案原因 IS NOT NULL and a.撤案时间 IS NOT NULL )
                 and NOT (a.撤案原因 in ('冻结债务人','超期案件协商还款','因不可抗力因素温和催收','冻结') and a.撤案时间 IS NOT NULL and a.撤案原因 IS NOT NULL and rpa.`催回金额` IS  NULL )
@@ -612,7 +621,7 @@ sql_misson_log = '''
                 GROUP BY cr.mission_log_id
                     ) rpa -- 催回本金表
                     on a.分案ID = rpa.mission_log_id
-                    
+
                 where  1=1
                 and a.`组别` = '预提醒组'
                     -- 剔除请假当天分案
@@ -649,6 +658,7 @@ sql_misson_days = '''SELECT
 
 misson_days_df = config.chinese_bd_engine_read(sql_misson_days)  # 上线天数
 
+
 # 字段3日均分案
 def Columns3(misson_log_df, user_info, finish_df, misson_days_df):
     temp_df_week = misson_log_df[misson_log_df['日期'] >= time_start.date()]
@@ -666,7 +676,7 @@ def Columns3(misson_log_df, user_info, finish_df, misson_days_df):
     temp_df_month = pd.merge(temp_df_month, user_info, on=['催员ID', '日期'], how='left')
     temp_df_month = pd.merge(temp_df_month, misson_days_df, on=['催员ID', '日期'], how='left')
     temp_df_month = temp_df_month.groupby(by=['组别', '是否新人', '主管'],
-                                        as_index=False).agg({"分案本金": "sum", "催回本金": "sum"})
+                                          as_index=False).agg({"分案本金": "sum", "催回本金": "sum"})
     sum_temp_df_month = temp_df_month.groupby(by=['组别', '是否新人'], as_index=False).agg({"分案本金": "sum", "催回本金": "sum"})
     sum_temp_df_month['主管'] = '汇总'
     temp_df_month = pd.concat([temp_df_month, sum_temp_df_month])
@@ -676,14 +686,14 @@ def Columns3(misson_log_df, user_info, finish_df, misson_days_df):
     finish_df = pd.merge(finish_df, temp_df, on=['组别', '是否新人', '主管'], how='left')
     return finish_df
 
+
 finish_df = Columns3(new_misson_log_df, user_info, finish_df, misson_days_df)
 finish_df.rename(columns={"日人均分案个数": "日人均新案个数", "日人均分案本金": "日人均新案本金", "总催回率": "新案催回率"}, inplace=True)
 finish_df = Columns3(new_D1_misson_log_df, user_info, finish_df, misson_days_df)
 del finish_df['日人均分案个数']
 del finish_df['日人均分案本金']
-finish_df.rename(columns={ "总催回率": "新案D1催回率"}, inplace=True)
+finish_df.rename(columns={"总催回率": "新案D1催回率"}, inplace=True)
 finish_df = Columns3(misson_log_df, user_info, finish_df, misson_days_df)
-
 
 #
 # # 字段四计算在手
@@ -762,13 +772,14 @@ call_df = config.chinese_bd_engine_read(sql_call)  # 通话时间
 # 字段5通话数据计算
 def Columns5(call_df, user_info, finish_df):
     temp_df = pd.merge(call_df, user_info, on=['催员ID', '日期'], how='left')
-    temp_df[['总共拨打次数', '总共短信次数', '当日通话时长', '总共通话次数']] = temp_df[['总共拨打次数', '总共短信次数', '当日通话时长','总共通话次数']].astype(float)
+    temp_df[['总共拨打次数', '总共短信次数', '当日通话时长', '总共通话次数']] = temp_df[['总共拨打次数', '总共短信次数', '当日通话时长', '总共通话次数']].astype(float)
     temp_df = temp_df[temp_df['总共拨打次数'] >= 20]
     temp_df = temp_df.groupby(by=['组别', '是否新人', '主管'],
                               as_index=False).agg({"总共拨打次数": "sum", "总共短信次数": "sum",
                                                    '总共通话次数': "sum", "当日通话时长": "sum", "上线天数": "sum"})
     sum_temp_df = temp_df.groupby(by=['组别', '是否新人'], as_index=False).agg({"总共拨打次数": "sum", "总共短信次数": "sum",
-                                                                          '总共通话次数': "sum", "当日通话时长": "sum", "上线天数": "sum"})
+                                                                          '总共通话次数': "sum", "当日通话时长": "sum",
+                                                                          "上线天数": "sum"})
     sum_temp_df['主管'] = '汇总'
     temp_df = pd.concat([temp_df, sum_temp_df])
     temp_df['日人均外呼次数'] = round(temp_df['总共拨打次数'] / temp_df['上线天数'], 0)
@@ -780,8 +791,8 @@ def Columns5(call_df, user_info, finish_df):
     finish_df = pd.merge(finish_df, temp_df, on=['组别', '是否新人', '主管'], how='left')
     return finish_df
 
-finish_df = Columns5(call_df, user_info, finish_df)
 
+finish_df = Columns5(call_df, user_info, finish_df)
 
 # 周期内分案通话记录
 sql_mission_call = '''
@@ -809,7 +820,7 @@ sql_mission_call = '''
                                                 ods_audit_call_history.call_at>= '{0}'
                                                 and ods_audit_call_history.call_at< '{1}'
                                                 group by 日期,催员ID,债务人ID,债务人关系,拨打号码) call_data
-                                                                                                                                
+
                                      JOIN (select
                                                                                 assign.debtor_id as '债务人ID',
                                                                                 assign.assigned_sys_user_id as '催员ID',
@@ -882,20 +893,21 @@ mission_debtor_df = pd.merge(mission_debtor_df, user_info1, on=['催员ID', '组
 mission_call_df = mission_call_df.dropna(subset=['债务人关系'])
 mission_call_df.loc[mission_call_df['债务人关系'] != 'self', '债务人关系'] = 'other'
 
+
 # 单个债务人三方联系个数
-def Columns6(mission_call_df , user_info, finish_df):
+def Columns6(mission_call_df, user_info, finish_df):
     temp_df = pd.merge(mission_call_df, user_info, on=['催员ID', '日期'], how='left')
     other_temp_df = temp_df[temp_df['债务人关系'] != 'self']
     other_temp_df = other_temp_df.drop_duplicates(subset=['债务人ID', '催员ID', '组别', '是否新人', '主管', '拨打号码'], keep='first')
     other_temp_df = other_temp_df.groupby(by=['组别', '是否新人', '主管'],
-                              as_index=False).agg({"拨打号码": "count"})
+                                          as_index=False).agg({"拨打号码": "count"})
     sum_other_temp_df = other_temp_df.groupby(by=['组别', '是否新人'], as_index=False).agg({"拨打号码": "sum"})
     sum_other_temp_df['主管'] = '汇总'
     other_temp_df = pd.concat([other_temp_df, sum_other_temp_df])
     other_temp_df.rename(columns={"拨打号码": "三方号码拨打个数"}, inplace=True)
-    debtor_temp_df = temp_df.drop_duplicates(subset=['债务人ID', '催员ID', '组别', '是否新人', '主管'], keep='first')    # 周期内分案已拨打总债务人
+    debtor_temp_df = temp_df.drop_duplicates(subset=['债务人ID', '催员ID', '组别', '是否新人', '主管'], keep='first')  # 周期内分案已拨打总债务人
     debtor_temp_df = debtor_temp_df.groupby(by=['组别', '是否新人', '主管'],
-                              as_index=False).agg({"债务人ID": "count"})
+                                            as_index=False).agg({"债务人ID": "count"})
     sum_debtor_temp_df = debtor_temp_df.groupby(by=['组别', '是否新人'], as_index=False).agg({"债务人ID": "sum"})
     sum_debtor_temp_df['主管'] = '汇总'
     debtor_temp_df = pd.concat([debtor_temp_df, sum_debtor_temp_df])
@@ -909,19 +921,20 @@ def Columns6(mission_call_df , user_info, finish_df):
 
 finish_df = Columns6(mission_call_df, user_info, finish_df)
 
+
 # 案件覆盖率
-def Columns7(mission_call_df , user_info, finish_df,mission_debtor_df):
+def Columns7(mission_call_df, user_info, finish_df, mission_debtor_df):
     temp_call_df = pd.merge(mission_call_df, user_info, on=['催员ID', '日期'], how='left')
     temp_dial_df = temp_call_df.drop_duplicates(subset=['债务人ID', '催员ID', '组别', '是否新人', '主管'], keep='first')
     temp_dial_df = temp_dial_df.groupby(by=['组别', '是否新人', '主管'],
-                              as_index=False).agg({"债务人ID": "count"})
+                                        as_index=False).agg({"债务人ID": "count"})
     sum_temp_dial_df = temp_dial_df.groupby(by=['组别', '是否新人'], as_index=False).agg({"债务人ID": "sum"})
     sum_temp_dial_df['主管'] = '汇总'
     temp_dial_df = pd.concat([temp_dial_df, sum_temp_dial_df])
     temp_dial_df.rename(columns={"债务人ID": "外呼债务人"}, inplace=True)
     mission_debtor_df = mission_debtor_df.drop_duplicates(subset=['债务人ID', '催员ID', '组别', '是否新人', '主管'], keep='first')
     temp_debtor_df = mission_debtor_df.groupby(by=['组别', '主管', '是否新人'],
-                              as_index=False).agg({"债务人ID": "count"})
+                                               as_index=False).agg({"债务人ID": "count"})
     sum_temp_debtor_df = temp_debtor_df.groupby(by=['组别', '是否新人'], as_index=False).agg({"债务人ID": "sum"})
     sum_temp_debtor_df['主管'] = '汇总'
     temp_debtor_df = pd.concat([temp_debtor_df, sum_temp_debtor_df])
@@ -933,15 +946,17 @@ def Columns7(mission_call_df , user_info, finish_df,mission_debtor_df):
     finish_df = pd.merge(finish_df, temp_df, on=['组别', '是否新人', '主管'], how='left')
     return finish_df
 
+
 finish_df = Columns7(mission_call_df, user_info, finish_df, mission_debtor_df)
 
+
 # 案件触达率
-def Columns8(mission_call_df , user_info, finish_df,mission_debtor_df):
+def Columns8(mission_call_df, user_info, finish_df, mission_debtor_df):
     mission_call_df = mission_call_df[mission_call_df['是否接通'] == 1]
     temp_call_df = pd.merge(mission_call_df, user_info, on=['催员ID', '日期'], how='left')
     temp_call_df = temp_call_df.drop_duplicates(subset=['债务人ID', '催员ID', '组别', '是否新人', '主管', '债务人关系'], keep='first')
     temp_call_df = temp_call_df.groupby(by=['组别', '是否新人', '主管', '债务人关系'],
-                              as_index=False).agg({"债务人ID": "count"})
+                                        as_index=False).agg({"债务人ID": "count"})
     sum_temp_call_df = temp_call_df.groupby(by=['组别', '是否新人', '债务人关系'], as_index=False).agg({"债务人ID": "sum"})
     sum_temp_call_df['主管'] = '汇总'
     temp_call_df = pd.concat([temp_call_df, sum_temp_call_df])
@@ -950,20 +965,22 @@ def Columns8(mission_call_df , user_info, finish_df,mission_debtor_df):
     temp_self_call_df.rename(columns={"接通债务人": "本人接通债务人"}, inplace=True)
     temp_other_call_df = temp_call_df[temp_call_df['债务人关系'] != 'self']
     temp_other_call_df.rename(columns={"接通债务人": "三方接通债务人"}, inplace=True)
-    temp_call_df = pd.merge(temp_self_call_df, temp_other_call_df[['组别', '是否新人', '主管', "三方接通债务人"]], on=['组别', '是否新人', '主管'], how='outer')
+    temp_call_df = pd.merge(temp_self_call_df, temp_other_call_df[['组别', '是否新人', '主管', "三方接通债务人"]],
+                            on=['组别', '是否新人', '主管'], how='outer')
     # 总接通债务人
     temp_total_call_df = pd.merge(mission_call_df, user_info, on=['催员ID', '日期'], how='left')
     temp_total_call_df = temp_total_call_df.drop_duplicates(subset=['债务人ID', '催员ID', '组别', '是否新人', '主管'], keep='first')
     temp_total_call_df = temp_total_call_df.groupby(by=['组别', '是否新人', '主管'],
-                              as_index=False).agg({"债务人ID": "count"})
+                                                    as_index=False).agg({"债务人ID": "count"})
     sum_temp_total_call_df = temp_total_call_df.groupby(by=['组别', '是否新人'], as_index=False).agg({"债务人ID": "sum"})
     sum_temp_total_call_df['主管'] = '汇总'
     temp_total_call_df = pd.concat([temp_total_call_df, sum_temp_total_call_df])
     temp_total_call_df.rename(columns={"债务人ID": "总接通债务人"}, inplace=True)
-    temp_call_df = pd.merge(temp_call_df, temp_total_call_df[['组别', '是否新人', '主管', "总接通债务人"]], on=['组别', '是否新人', '主管'], how='outer')
+    temp_call_df = pd.merge(temp_call_df, temp_total_call_df[['组别', '是否新人', '主管', "总接通债务人"]], on=['组别', '是否新人', '主管'],
+                            how='outer')
     mission_debtor_df = mission_debtor_df.drop_duplicates(subset=['债务人ID', '催员ID', '组别', '主管', '是否新人'], keep='first')
     temp_debtor_df = mission_debtor_df.groupby(by=['组别', '主管', '是否新人'],
-                              as_index=False).agg({"债务人ID": "count"})
+                                               as_index=False).agg({"债务人ID": "count"})
     sum_temp_debtor_df = temp_debtor_df.groupby(by=['组别', '是否新人'], as_index=False).agg({"债务人ID": "sum"})
     sum_temp_debtor_df['主管'] = '汇总'
     temp_debtor_df = pd.concat([temp_debtor_df, sum_temp_debtor_df])
@@ -972,15 +989,17 @@ def Columns8(mission_call_df , user_info, finish_df,mission_debtor_df):
     temp_df['本人触达率'] = round(temp_df['本人接通债务人'] / temp_df['分配债务人'], 4)
     temp_df['三方触达率'] = round(temp_df['三方接通债务人'] / temp_df['分配债务人'], 4)
     temp_df['案件触达率'] = round(temp_df['总接通债务人'] / temp_df['分配债务人'], 4)
-    temp_df = temp_df[['组别', '是否新人', '主管', '本人触达率', '三方触达率','案件触达率']]
+    temp_df = temp_df[['组别', '是否新人', '主管', '本人触达率', '三方触达率', '案件触达率']]
     finish_df = pd.merge(finish_df, temp_df, on=['组别', '是否新人', '主管'], how='left')
     return finish_df
+
 
 finish_df = Columns8(mission_call_df, user_info, finish_df, mission_debtor_df)
 finish_df = finish_df.dropna(subset=['日人均分案本金'])
 finish_df.sort_values(by=['组别', '是否新人'], ascending=[True, False], inplace=True)
-finish_df = finish_df[['组别', '是否新人', '主管', '匹配字段', '人数/组数', '日人均新案个数', '日人均新案本金', '日人均分案个数', '日人均分案本金', '日人均实收', '新案催回率', '总催回率',
-           '新案D1催回率', '日人均外呼次数', '日人均通时', '日人均通次', '日人均短信发送量', '接通率', '单个债务人三方联系个数', '案件覆盖率', '本人触达率', '三方触达率', '案件触达率']]
+finish_df = finish_df[
+    ['组别', '是否新人', '主管', '匹配字段', '人数/组数', '日人均新案个数', '日人均新案本金', '日人均分案个数', '日人均分案本金', '日人均实收', '新案催回率', '总催回率',
+     '新案D1催回率', '日人均外呼次数', '日人均通时', '日人均通次', '日人均短信发送量', '接通率', '单个债务人三方联系个数', '案件覆盖率', '本人触达率', '三方触达率', '案件触达率']]
 
 # =============================================================================
 # 数据输出
