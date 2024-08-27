@@ -1,0 +1,8 @@
+邮箱=shwd_operation@weidu.ac.cn
+密码=Shanghai0615
+测试邮箱="lichongqing@weidu.ac.cn"
+泰国日报收件人邮箱="sweety@massgom.com","Will@massgom.com","mignon@massgom.com","Carols@massgom.com","operation@massgom.com","lichongqing@weidu.ac.cn","zhangjinyou@weidu.ac.cn"
+巴基斯坦日报收件人邮箱="lichongqing@weidu.ac.cn","wangxiang3@weidu.ac.cn","zhangjinyou@weidu.ac.cn","luoping@weidu.ac.cn","chenxiaomin@weidu.ac.cn"
+印尼日报收件人邮箱="lichongqing@weidu.ac.cn","yeyuhao@weidu.ac.cn","zhangjinyou@weidu.ac.cn","chenheng@weidu.ac.cn","zhoutongqing@weidu.ac.cn","husong@weidu.ac.cn","Chris@massgom.com","vincentztq@massgom.com"
+墨西哥日报收件人邮箱="cynthia@massgom.com","marco@massgom.com","astrid@massgom.com","steve@massgom.com","zhangjinyou@weidu.ac.cn","xumingming@weidu.ac.cn"
+菲律宾日报收件人邮箱="woody@massgom.com","Evan@massgom.com","yumingsheng@weidu.ac.cn","emotia@massgom.com","lichongqing@weidu.ac.cn","zhangjinyou@weidu.ac.cn","liufengfang@weidu.ac.cn","mason@massgom.com","stan@massgom.com"
