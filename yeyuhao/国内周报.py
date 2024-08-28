@@ -16,7 +16,6 @@ time_start = now - datetime.timedelta(7)
 # time_start = now.replace(year=2024, month=8, day=1)  # 数据开始日期
 # time_end = now.replace(year=2024, month=8, day=8)  # 数据截止日期+1day
 month_start = time_start.replace(day=1, hour=6, minute=0, second=0, microsecond=0)
-# month_start = now.replace(year=2024, month=1, day=1)   # 本月初开始日期
 
 print('周报数据时间范围{}--->{}'.format(str(time_start)[5:10],
                                 str(time_end - datetime.timedelta(1))[:10]))
@@ -1011,6 +1010,6 @@ writer1 = pd.ExcelWriter(
     engine='xlsxwriter')
 finish_df.to_excel(writer1, sheet_name='数据', index=False)
 writer1._save()  # 此语句不可少，否则本地文件未保存
-excelFormat.beautify_excel(out_path + "国内电催新周报{0}-{1}.xlsx")
+excelFormat.beautify_excel(out_path + "国内电催新周报{0}-{1}.xlsx".format(str(time_start)[5:10], str(time_end - datetime.timedelta(1))[5:10]))
 print("结束运行", datetime.datetime.now())
 

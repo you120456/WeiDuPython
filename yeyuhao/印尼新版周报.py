@@ -12,8 +12,8 @@ print("印尼周报自动化,开始运行：", datetime.datetime.now())
 now = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 time_end = now - datetime.timedelta(0)
 time_start = now - datetime.timedelta(7)
-time_start = now.replace(year=2024, month=7, day=1)  # 数据开始日期
-time_end = now.replace(year=2024, month=7, day=12)  # 数据截止日期+1day
+time_start = now.replace(year=2024, month=8, day=1)  # 数据开始日期
+time_end = now.replace(year=2024, month=8, day=20)  # 数据截止日期+1day
 month_start = time_start.replace(day=1, hour=6, minute=0, second=0, microsecond=0)
 print(time_start.date())
 # month_start = now.replace(year=2024, month=1, day=1)   # 本月初开始日期
@@ -85,14 +85,14 @@ sql_online_days = '''SELECT
                     ca.user_name as '催员', 
                     ca.asset_group_name as '组别',
                     count(ca.`attendance_status`) AS  '上线天数'
-                    FROM collect_attendance_dtl ca
+                    FROM ods_fox_collect_attendance_dtl ca
                     WHERE ca.work_day>= '{}'
                     AND ca.work_day< '{}'
                     AND ca.attendance_status_flag = 1
-                    GROUP BY 1 ,3
+                    GROUP BY 1 ,3,2
                     '''.format(str(time_start), str(time_end))
 
-online_days_df = config.indonesia_fox_engine_read(sql_online_days)  # 上线天数
+online_days_df = config.indonesia_bd_engine_read(sql_online_days)  # 上线天数
 
 work_user = online_days_df[online_days_df['上线天数'] > 0]
 work_user['上线'] = 1

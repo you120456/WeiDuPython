@@ -257,12 +257,34 @@ def chinese_bd_engine_read(sql,
     return temp_df
 
 
-import pymysql
-import pandas as pd
-import warnings
-from sqlalchemy import create_engine
-from sshtunnel import SSHTunnelForwarder
 def indonesia_bd_engine_read(sql,
+                user='u_yeyuhao',
+                password='W6RvuiQhrwDk',
+                database='fox_ods'):
+    # 印尼数仓数据库查询函数
+    server = SSHTunnelForwarder(
+        ('data-pord.starklotus.com', 38001),  # 这里写入B 跳板机IP、端口
+        ssh_username='charly',  # 跳板机 用户名
+        ssh_password='charly',  # 跳板机 密码
+        ssh_pkey=r'C:\Users\user\Documents\WXWork\1688854640449737\Cache\File\2024-08\charly_id_rsa',
+        remote_bind_address=('192.168.25.206', 9030),  # 这里写入 C数据库的 IP、端口号
+        # local_bind_address=('127.0.0.1', 8080)
+    )
+    server.start()
+    engine = pymysql.connect(
+        host='127.0.0.1',  # 只能写 127.0.0.1，这是固定的，不可更改
+        port=server.local_bind_port,
+        user=user,  # C数据库 用户名
+        password=password,  # C数据库 密码
+        db=database,  # 填写需要连接的数据库名
+        charset='utf8',
+    )
+    temp_df = pd.read_sql(sql, engine)
+    engine.close()
+    server.stop()
+    return temp_df
+
+def indonesia_bd_engine_read1(sql,
                 user='u_yeyuhao',
                 password='W6RvuiQhrwDk',
                 database='fox_ods'):
@@ -290,6 +312,60 @@ def indonesia_bd_engine_read(sql,
     return temp_df
 
 
+def philippines_bd_engine_read(sql,
+                user='u_yeyuhao',
+                password='W6RvuiQhrwDk',
+                database='fox_ods'):
+    # 印尼数仓数据库查询函数
+    server = SSHTunnelForwarder(
+        ('161.117.0.173', 22),  # 这里写入B 跳板机IP、端口
+        ssh_username='yeyuhao',  # 跳板机 用户名
+        ssh_password='yeyuhao',  # 跳板机 密码
+        ssh_pkey=r'D:\唯渡科技\国内\秘钥文件对应\叶雨豪\id_rsa',
+        remote_bind_address=('192.168.59.29', 9030),  # 这里写入 C数据库的 IP、端口号
+        # local_bind_address=('127.0.0.1', 8080)
+    )
+    server.start()
+    engine = pymysql.connect(
+        host='127.0.0.1',  # 只能写 127.0.0.1，这是固定的，不可更改
+        port=server.local_bind_port,
+        user=user,  # C数据库 用户名
+        password=password,  # C数据库 密码
+        db=database,  # 填写需要连接的数据库名
+        charset='utf8',
+    )
+    temp_df = pd.read_sql(sql, engine)
+    engine.close()
+    server.stop()
+    return temp_df
+
+def mexico_bd_engine_read(sql,
+                user='u_yeyuhao',
+                password='W6RvuiQhrwDk',
+                database='fox_ods'):
+    # 印尼数仓数据库查询函数
+    server = SSHTunnelForwarder(
+        ('mx-dataprod.mxgbus.com', 36000),  # 这里写入B 跳板机IP、端口
+        ssh_username='yeyuhao',  # 跳板机 用户名
+        ssh_password='yeyuhao',  # 跳板机 密码
+        ssh_pkey=r'D:\唯渡科技\国内\秘钥文件对应\叶雨豪\id_rsa',
+        remote_bind_address=('172.20.220.164', 9030),  # 这里写入 C数据库的 IP、端口号
+        # local_bind_address=('127.0.0.1', 8080)
+    )
+    server.start()
+    engine = pymysql.connect(
+        host='127.0.0.1',  # 只能写 127.0.0.1，这是固定的，不可更改
+        port=server.local_bind_port,
+        user=user,  # C数据库 用户名
+        password=password,  # C数据库 密码
+        db=database,  # 填写需要连接的数据库名
+        charset='utf8',
+    )
+    temp_df = pd.read_sql(sql, engine)
+    engine.close()
+    server.stop()
+    return temp_df
+
 
 
 
@@ -302,6 +378,7 @@ def indonesia_bd_engine_read(sql,
 def to_local_database(df, name, if_exists='append', index=None, base_name='qsq_fox'):
     host_data = '//root:weidu:001A@172.16.1.250:3306'
     engine = create_engine('mysql+pymysql:{}/{}?charset=utf8'.format(host_data, base_name))
+    print('开始导入')
     df.to_sql(name=name, con=engine, if_exists=if_exists, index=index)
     print("数据已导入内网数据库-{0}，导入方式：{1}".format(base_name, if_exists))
     return 0
