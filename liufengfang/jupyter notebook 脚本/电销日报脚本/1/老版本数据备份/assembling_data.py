@@ -31,10 +31,12 @@ def calculation_interval_tl_v2(row, target_column):
         return "60%-80%"
 
 
-# 计算排名及排名区间
+# 计算组长排名及排名区间
 def get_ranking_range_tl(df):
     # 审完率排名
     df['申完率排名or放款率排名'] = df.groupby('group')['申完率or放款率'].rank(method='min', ascending=False)
+    # 日人均数据排名
+    df['日人均(申完数or放款数)排名'] = df.groupby('group')['日人均(申完数or放款数)'].rank(method='min', ascending=False)
     # 统计参与排名总人数
     df['参与排名总人数'] = df.groupby('group')['team_leader_no'].transform('count')
     # 计算排名区间
@@ -42,6 +44,11 @@ def get_ranking_range_tl(df):
                                     calculation_interval_tl(x, '参与排名总人数', '申完率排名or放款率排名')
                                     if x['参与排名总人数'] > 3
                                     else calculation_interval_tl_v2(x, '申完率排名or放款率排名'), axis=1)
+    
+    df['日人均(申完数or放款数)排名区间'] = df.apply(lambda x:
+                                    calculation_interval_tl(x, '参与排名总人数', '日人均(申完数or放款数)排名')
+                                    if x['参与排名总人数'] > 3
+                                    else calculation_interval_tl_v2(x, '日人均(申完数or放款数)排名'), axis=1)
 
     return df.drop(columns=('参与排名总人数'))
 
@@ -86,14 +93,18 @@ def calculation_interval(row, column_name, target_column):
         return "bottom10%"
 
 
-# 计算排名及排名区间
+# 计算坐席排名及排名区间
 def get_ranking_range(df):
     # 审完率排名
+    df['申完量排名or放款量排名'] = df.groupby('group')['申完量or放款量'].rank(method='min', ascending=False)
     df['申完率排名or放款率排名'] = df.groupby('group')['申完率or放款率'].rank(method='min', ascending=False)
+    df['日均(申完量or放款量)排名'] = df.groupby('group')['日均(申完量or放款量)'].rank(method='min', ascending=False)
     # 统计参与排名总人数
     df['参与排名总人数'] = df.groupby('group')['user_id'].transform('count')
     # 计算排名区间
-    df['申完率排名区间or放款率区间'] = df.apply(lambda x: calculation_interval(x, '参与排名总人数', '申完率排名or放款率排名'), axis=1)
+    df['申完量排名区间or放款量排名区间'] = df.apply(lambda x: calculation_interval(x, '参与排名总人数', '申完量排名or放款量排名'), axis=1)
+    df['申完率排名区间or放款率排名区间'] = df.apply(lambda x: calculation_interval(x, '参与排名总人数', '申完率排名or放款率排名'), axis=1)
+    df['日均(申完量or放款量)排名区间'] = df.apply(lambda x: calculation_interval(x, '参与排名总人数', '日均(申完量or放款量)排名'), axis=1)
     return df
 
 
@@ -242,6 +253,7 @@ def get_staff_result(get_performance_df, get_process_df, get_attendance_df, dimi
     # staff_base['申完率'] = round(staff_base['application_sum'] / staff_base['assign_sum'],4)
     # staff_base['放款率'] = round(staff_base['loan_sum'] / staff_base['assign_sum'],4)
     staff_base['申完率or放款率'] = round(staff_base['申完量or放款量'] / staff_base['assign_sum'], 4)
+    staff_base['日均(申完量or放款量)'] = round(staff_base['申完量or放款量'] / staff_base['attendance_sum'], 2)
 
     # 全部员工进行排名
     '''
@@ -252,24 +264,25 @@ def get_staff_result(get_performance_df, get_process_df, get_attendance_df, dimi
                                       | ((staff_base['attendance_sum'] <= 15)
                                          & (staff_base['dimission_date'].dt.date < pd.to_datetime(end_day).date())))]
 
+    # 剔除离职且上线<=15的人员排名
+    # 剔除未上线人员排名
+    df_all = get_ranking_range(all_rankings_staff)
+    df_all = df_all[['group', 'director', 'team_leader', 'user_id', '申完率排名or放款率排名', '申完率排名区间or放款率排名区间','申完量排名or放款量排名','申完量排名区间or放款量排名区间','日均(申完量or放款量)排名','日均(申完量or放款量)排名区间']]
+
     # 上线大于15天员工进行排名
     '''
     1.排除上线天数等于0的不进行排名
     2.排除离职日期在当前日期之前并且上线天数小于等于15天的不进行排名
     '''
     all_rankings_staff_15 = staff_base[(staff_base['attendance_sum'] > 15)]
-    # 剔除离职且上线<=15的人员排名
-    # 剔除未上线人员排名
-    df_all = get_ranking_range(all_rankings_staff)
-    df_all = df_all[['group', 'director', 'team_leader', 'user_id', '申完率排名or放款率排名', '申完率排名区间or放款率区间']]
-
+    all_rankings_staff_15 = pd.DataFrame()
     if not all_rankings_staff_15.empty:  # 判断是否有15天以上数据的df
         print("已存在15天以上坐席数据")
         # 上线大于15天的人员的排名
         df_outpace_15 = get_ranking_range(all_rankings_staff_15)
         df_outpace_15.rename(columns={
             '申完率排名or放款率排名': '申完率排名or放款率排名(大于15)',
-            '申完率排名区间or放款率区间': '申完率排名区间or放款率区间(大于15)'
+            '申完率排名区间or放款率排名区间': '申完率排名区间or放款率排名区间(大于15)'
         }, inplace=True)
         # 选择特定列数据
         df_outpace_15 = df_outpace_15[
@@ -289,41 +302,48 @@ def get_staff_result(get_performance_df, get_process_df, get_attendance_df, dimi
         df_4 = pd.merge(staff_base, df_all, left_on=['group', 'director', 'team_leader', 'user_id'],
                         right_on=['group', 'director', 'team_leader', 'user_id'], how='left')
         # 判断员工业绩是否达标
-        df_4['业绩是否达标'] = np.where(df_4['申完率排名区间or放款率区间'].isin(['Top5%', '5%-25%', '25%-50%']), 'YES', 'NO')
+        df_4['业绩是否达标'] = np.where(df_4['申完率排名区间or放款率排名区间'].isin(['Top5%', '5%-25%', '25%-50%']), 'YES', 'NO')
 
-    # 匹配员工工号及组长工号
-    df_5 = pd.merge(df_4, no_count_churn_df.drop(columns=['name', 'count_churn']).rename(columns={'no': '员工工号'}),
+    # 匹配员工工号、办公方式、是否委外判断及组长工号
+    df_5 = pd.merge(df_4, no_count_churn_df.drop(columns=['name', 'count_churn']).rename(columns={'no': '员工工号','work_set_up':'办公方式'}),
                     on='user_id', how='left')
     df_5 = pd.merge(df_5, no_count_churn_df.drop(columns=['user_id', 'count_churn']).rename(columns={'no': '组长工号'}),
                     left_on='team_leader', right_on='name', how='left').drop(columns='name')
     df_5['应出勤天数'] = int(required_attendance_df['schedule_count'])
+    df_5['机构属性'] = df_5['group'].apply(lambda x: '委外' if 'os' in x else '内催')
     员工数据_result = df_5
     return 员工数据_result
     # 员工数据计算 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ END ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-def get_tl_result(get_attendance_df, get_performance_df, no_count_churn_df, 员工数据_result):
+def get_tl_result(get_attendance_df, get_performance_df, no_count_churn_df, 员工数据_result,if_applied):
     # 组长数据计算 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ START ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # 计算员工在组长名下的上线天数
     组长名下员工上线天数 = get_attendance_df.groupby(['group', 'director', 'team_leader', 'user_id']).agg(
         组长名下上线天数=('attendance_status', 'sum')
     ).reset_index()
 
-    # 组长名下上线天数拼接到员工每日业绩里用于计算组长业绩
     # 这里取在本月有排班数据的员工
     df_performance = get_performance_df[get_performance_df['user_id'].isin(员工数据_result['user_id'].tolist())]
+    attendance_df = get_attendance_df[get_attendance_df['user_id'].isin(员工数据_result['user_id'].tolist())]
+    #汇总合计组长名下坐席的上线天数 
+    小组总上线天数 = attendance_df.groupby(['group', 'director', 'team_leader']).agg(
+        小组总上线天数=('attendance_status', 'sum')
+    ).reset_index()
+    # 组长名下上线天数拼接到员工每日业绩里用于计算组长业绩
     组长每日业绩 = pd.merge(df_performance, 组长名下员工上线天数, left_on=['group', 'director', 'team_leader', 'user_id'],
                       right_on=['group', 'director', 'team_leader', 'user_id'], how='left')
+    
     组长业绩 = 组长每日业绩.groupby(['group', 'director', 'team_leader']).agg(
         分案数=('include_assign', 'sum'),
         申完数=('include_application', 'sum'),
-        放款数=('include_loan', 'sum'),
+        放款数=('include_loan', 'sum')
     ).reset_index()
 
     组长业绩_大于15天 = 组长每日业绩[组长每日业绩['组长名下上线天数'] > 15].groupby(['group', 'director', 'team_leader']).agg(
         分案数=('include_assign', 'sum'),
         申完数=('include_application', 'sum'),
-        放款数=('include_loan', 'sum'),
+        放款数=('include_loan', 'sum')
     ).reset_index()
     # 统计组长离职人数及总人数统计
     组长离职人数统计 = 员工数据_result.groupby(['group', 'director', 'team_leader'])['dimission_date'].count().reset_index().rename(
@@ -333,17 +353,24 @@ def get_tl_result(get_attendance_df, get_performance_df, no_count_churn_df, 员�
     # 达标人数统计
     组长达标人数统计 = 员工数据_result[员工数据_result['业绩是否达标'] == 'YES'].groupby(['group', 'director', 'team_leader'])[
         'user_id'].count().reset_index().rename(columns={'user_id': '达标人数'})
-    组长业绩1 = pd.merge(组长业绩, 组长总人数统计, on=(['group', 'director', 'team_leader']), how='left')
-    组长业绩2 = pd.merge(组长业绩1, 组长离职人数统计, on=(['group', 'director', 'team_leader']), how='left')
-    组长业绩3 = pd.merge(组长业绩2, 组长达标人数统计, on=(['group', 'director', 'team_leader']), how='left')
-    组长业绩4 = pd.merge(组长业绩3,
+    
+    #要合并的组长数据 
+    df_list = [组长业绩,组长离职人数统计,组长达标人数统计,组长总人数统计,小组总上线天数]
+    # 初始化merged_df为df_list中的第一个DataFrame
+    merged_df_组长业绩 = df_list[0]
+    # 组长数据合并
+    for df_data in df_list[1:]:  
+        merged_df_组长业绩 = pd.merge(merged_df_组长业绩, df_data, on=['group', 'director', 'team_leader'])
+
+    merged_df_组长业绩 = pd.merge(merged_df_组长业绩,
                      no_count_churn_df.drop(columns=['user_id', 'count_churn']).rename(columns={'name': 'team_leader'}),
                      on=('team_leader'), how='left').rename(columns={'no': 'team_leader_no'})
-    组长业绩4['流失率'] = round(组长业绩4['离职人数'] / 组长业绩4['总人数'], 4)
-    组长业绩4['应达标人数'] = 组长业绩4['总人数'] // 2
-    组长业绩4['申完数or放款数'] = np.where(组长业绩4['group'] == 'Telesales A', 组长业绩4['申完数'], 组长业绩4['放款数'])
-    组长业绩4['申完率or放款率'] = round(组长业绩4['申完数or放款数'] / 组长业绩4['分案数'], 4)
-    组长业绩_result = get_ranking_range_tl(组长业绩4)
+    merged_df_组长业绩['流失率'] = round(merged_df_组长业绩['离职人数'] / merged_df_组长业绩['总人数'], 4)
+    merged_df_组长业绩['应达标人数'] = merged_df_组长业绩['总人数'] // 2
+    merged_df_组长业绩['申完数or放款数'] = np.where(merged_df_组长业绩['group'] == 'Telesales A', merged_df_组长业绩['申完数'], merged_df_组长业绩['放款数']) if if_applied ==1 else merged_df_组长业绩['放款数']
+    merged_df_组长业绩['申完率or放款率'] = round(merged_df_组长业绩['申完数or放款数'] / merged_df_组长业绩['分案数'], 4)
+    merged_df_组长业绩['日人均(申完数or放款数)'] = round(merged_df_组长业绩['申完数or放款数'] / merged_df_组长业绩['小组总上线天数'], 2)
+    组长业绩_result = get_ranking_range_tl(merged_df_组长业绩)
     return 组长业绩_result
     # 组长数据计算 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ END ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -396,28 +423,23 @@ def get_dr_result(get_attendance_df, get_performance_df, 员工数据_result, �
     # 主管数据计算 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ END ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-def beautify_send(员工数据_result, 组长业绩_result, 主管业绩_reult, path, recipients, subject, email_body):
+def beautify_send(员工数据_result, 组长业绩_result, 主管业绩_reult, path, recipients, subject, email_body,主管Top业绩汇总,业务组Top业绩汇总):
     # 数据排序排版 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ START ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     员工输出数据 = 员工数据_result[
-        ['group', 'director', '组长工号', 'team_leader', '员工工号', 'user_name', '是否新人', 'first_online_day', 'dimission_date',
-         '日均外呼次数'
-            , '日均通话时长', '应出勤天数', 'attendance_sum', 'newly_sum', 'old_sum', 'assign_sum', '申完量or放款量', '申完率or放款率',
-         '申完率排名or放款率排名', '申完率排名区间or放款率区间'
-            , '业绩是否达标']]
-    员工输出数据.columns = ['业务组', '主管', '组长工号', '组长', '坐席工号', '坐席', '是否新人', '上线日期', '离职日期', '日均外呼次数'
-        , '日均通话时长', '应出勤天数', '总上线天数', '新人天数', '老人天数', '分案数', '申完量or放款量', '申完率or放款率', '申完率排名or放款率排名', '申完率排名区间or放款率区间'
-        , '业绩是否达标']
-    # 员工输出数据.columns = ['group', 'director', 'team_leader_no', 'team_leader', 'employee_no', 'user_name', 'is_new_employee', 
-    #                      'first_online_day', 'dimission_date', 'avg_daily_calls', 'avg_daily_call_duration', 'expected_attendance_days', 
-    #                      'attendance_sum', 'newly_sum', 'old_sum', 'application_or_loan_count', 
-    #                      'application_or_loan_rate', 'application_or_loan_rate_rank', 'application_or_loan_rate_range', 
-    #                      'is_performance_met']
+        ['group', '办公方式','机构属性','director', '组长工号', 'team_leader', '员工工号', 'user_name', '是否新人', 'first_online_day', 'dimission_date',
+         '日均外呼次数', '日均通话时长', '应出勤天数', 'attendance_sum', 'newly_sum', 'old_sum', 'assign_sum', '申完量or放款量','申完量排名or放款量排名',
+         '申完量排名区间or放款量排名区间','日均(申完量or放款量)','日均(申完量or放款量)排名','日均(申完量or放款量)排名区间', '申完率or放款率',
+         '申完率排名or放款率排名', '申完率排名区间or放款率排名区间', '业绩是否达标']]
+    
+    员工输出数据.columns = ['业务组','办公方式','机构属性', '主管', '组长工号', '组长', '坐席工号', '坐席', '是否新人', '上线日期', '离职日期', '日均外呼次数',
+                       '日均通话时长', '应出勤天数', '总上线天数', '新人天数', '老人天数', '分案数', '申完量or放款量','申完量排名or放款量排名','申完量排名区间or放款量排名区间',
+                       '日均(申完量or放款量)','日均(申完量or放款量)排名','日均(申完量or放款量)排名区间', '申完率or放款率', '申完率排名or放款率排名', '申完率排名区间or放款率排名区间', '业绩是否达标']
 
     组长输出数据 = 组长业绩_result[
         ['group', 'director', 'team_leader_no', 'team_leader', '总人数', '应达标人数', '达标人数', '离职人数', '流失率', '分案数', '申完数or放款数',
-         '申完率or放款率', '申完率排名or放款率排名', '申完率排名区间or放款率区间']]
+         '申完率or放款率', '申完率排名or放款率排名', '申完率排名区间or放款率区间','日人均(申完数or放款数)','日人均(申完数or放款数)排名','日人均(申完数or放款数)排名区间','小组总上线天数']]
     组长输出数据.columns = ['业务组', '主管', '组长工号', '组长', '坐席数', '应达标人数', '实际达标人数', '离职人数', '流失率', '分案数', '申完数or放款数', '申完率or放款率',
-                      '申完率排名or放款率排名', '申完率排名区间or放款率区间']
+                      '申完率排名or放款率排名', '申完率排名区间or放款率区间','日人均(申完数or放款数)','日人均(申完数or放款数)排名','日人均(申完数or放款数)排名区间','小组总上线天数']
     主管输出数据 = 主管业绩_reult[
         ['group', 'director_no', 'director', '总人数', '应达标人数', '达标人数', '离职人数', '流失率', '分案数', '放款数', '放款率', '带组数']]
     主管输出数据.columns = ['业务组', '主管工号', '主管', '坐席数', '应达标人数', '实际达标人数', '离职人数', '流失率', '分案数', '放款数', '放款率', '带组数']
@@ -426,48 +448,10 @@ def beautify_send(员工数据_result, 组长业绩_result, 主管业绩_reult, 
     员工输出数据.to_excel(ew, sheet_name='坐席数据', index=False)
     组长输出数据.to_excel(ew, sheet_name='组长数据', index=False)
     主管输出数据.to_excel(ew, sheet_name='主管数据', index=False)
+    主管Top业绩汇总.to_excel(ew, sheet_name='主管Top业绩汇总', index=False)
+    业务组Top业绩汇总.to_excel(ew, sheet_name='业务组Top业绩汇总', index=False)
     ew.close()
     beautify_excel(path)
     # 发送邮件
     # recipients = ['liufengfang@weidu.ac.cn']
-    send_bulk_emails_with_attachment(recipients, subject, email_body, path)
-# if __name__ == "__main__":
-# # 设置日报查询范围 查询日期初始化
-# end_day = str(pd.Timestamp.now().date()-pd.Timedelta(days=1))+" 23:59:59"
-# start_day = str((pd.Timestamp.now()- pd.Timedelta(days=1)).replace(day=1).strftime('%Y-%m-%d')) +' 00:00:00'
-# loan_end_day = end_day
-
-# # 数据保存路径
-# path = './菲律宾电销/菲律宾电销日报({0}).xlsx'.format(pd.to_datetime(end_day).date())
-
-# # 设置工作目录为脚本所在目录
-# os.chdir(os.path.dirname(os.path.abspath(__file__)))
-# # 读取配置文件获取电销业务组
-# with open('config.yaml','r',encoding='UTF-8') as file:
-#     config = yaml.safe_load(file)
-# group = ",".join(f"'{cf}'" for cf in config['philippines']['group'])
-
-# # 获取数据数据源
-# performance_df,attendance_df,process_df,dimission_date_df,first_online_df,required_attendance_df,current_month_first_scheduled_df,organization_df,assign_organization_df,no_count_churn_df = get_data(start_day,end_day,loan_end_day,group)
-
-# # 获取清洗架构后的数据
-# get_performance_df,get_process_df,get_attendance_df = get_cleaning_data(performance_df,attendance_df,process_df,organization_df,first_online_df)
-
-# #员工数据
-# 员工数据_result = get_staff_result(get_performance_df,get_process_df,get_attendance_df,dimission_date_df,first_online_df,required_attendance_df,organization_df,no_count_churn_df,end_day,current_month_first_scheduled_df,if_exit_application=1)
-
-# # 组长数据
-# 组长业绩数据_result = get_tl_result(get_attendance_df,get_performance_df,no_count_churn_df,员工数据_result)
-
-# # 主管业绩数据
-# 主管业绩数据_result = get_dr_result(get_attendance_df,get_performance_df,员工数据_result,组长业绩数据_result,no_count_churn_df)
-
-# # 最终美化发送邮件
-# # 邮件接收人list
-# # recipients = config['philippines']['email']
-# recipients = ['liufengfang@weidu.ac.cn']
-# # 邮件主题
-# subject = '【菲律宾电销日报数据-{0}】'.format(pd.to_datetime(end_day).date())
-# # 邮件内容
-# body =r"""<!DOCTYPE html><html><head><style>.indented {margin-left: 20px;}</style></head><body><p>各位好！</p> <p>&nbsp;&nbsp;&nbsp;&nbsp;附件是菲律宾电销日报数据，请查收！谢谢！</p></body></html>"""
-# beautify_send(员工数据_result,组长业绩数据_result,主管业绩数据_result,path,recipients,subject,body)
+    # send_bulk_emails_with_attachment(recipients, subject, email_body, path)
