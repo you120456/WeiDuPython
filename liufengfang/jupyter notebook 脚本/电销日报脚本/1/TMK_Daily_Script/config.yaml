@@ -1,0 +1,78 @@
+domestic:
+  group:
+  - '电销组'
+  email:
+  - 'lijian1@weidu.ac.cn'
+  - 'zhangjinyou@weidu.ac.cn'
+  - 'liufengfang@weidu.ac.cn'
+  - 'lizheng@weidu.ac.cn'
+
+
+philippines:
+  group:
+    - 'Telesales'
+    - 'Telesales A'
+    - 'Telesales B'
+  email:
+    - 'caijun@weidu.ac.cn'
+    - 'jiayunhao1@weidu.ac.cn'
+    - 'zhangdongdong@weidu.ac.cn'
+    - 'yumingsheng@weidu.ac.cn'
+    - 'zhangjinyou@weidu.ac.cn'
+    - 'liufengfang@weidu.ac.cn'
+    - 'limingyue@weidu.ac.cn'
+    - 'lizheng@weidu.ac.cn'
+    - 'caolili@weidu.ac.cn'
+    - 'liyuyang@weidu.ac.cn'
+    - 'dimeng@weidu.ac.cn'
+    - 'chenhong4@weidu.ac.cn'
+
+
+mexico:
+  group:
+    - 'Telesales'
+    - 'Telesales A'
+    - 'Telesales B'
+  email:
+    - 'tangting@weidu.ac.cn'
+    - 'zhangjinyou@weidu.ac.cn'
+    - 'liufengfang@weidu.ac.cn'
+    - 'cynthia@massgom.com'
+    - 'steve@massgom.com'
+    - 'xumingming@weidu.ac.cn'
+    - 'johnson@massgom.com'
+    - 'lizheng@weidu.ac.cn'
+    - 'wangyuxiang@weidu.ac.cn'
+    - 'xuwenbin@weidu.ac.cn'
+    - 'yujinjie@weidu.ac.cn'
+
+
+thailand:
+  group:
+    - 'Telesales'
+    - 'Telesales A'
+    - 'Telesales B'
+  email:
+    - 'zhangjinyou@weidu.ac.cn'
+    - 'liufengfang@weidu.ac.cn'
+    - 'sweety@massgom.com'
+    - 'Will@massgom.com'
+    - 'mignon@massgom.com'
+    - 'lichongqing@weidu.ac.cn'
+    - 'wangling@weidu.ac.cn'
+    - 'limingyue@weidu.ac.cn'
+    - 'lizheng@weidu.ac.cn'
+    - 'wangyuxiang@weidu.ac.cn'
+    - 'xuwenbin@weidu.ac.cn'
+    - 'yujinjie@weidu.ac.cn'
+    - 'lijian1@weidu.ac.cn'
+
+
+indonesia:
+  group:
+    - 'Telesales'
+    - 'Telesales A'
+    - 'Telesales B'
+  email:
+    - 'zhangjinyou@weidu.ac.cn'
+    - 'liufengfang@weidu.ac.cn'
