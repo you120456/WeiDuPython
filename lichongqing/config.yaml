@@ -1,0 +1,80 @@
+domestic:
+  Supervisor:
+  - 'Darin Inkham Sup':'Sup Sweety'
+  - 'Patchanee Pumee':'Sup Jonas'
+  - 'Bunkwan Kraichuay Sup':'Sup Jonas'
+  - 'Chuthamat Chaiwichit2':'Sup Jonas'
+  'Darin Inkham Sup':'Sup Sweety'
+  'Ekthana Marayok1':'Sup Sweety'
+  'Narissara Hinaukeedet':'Sup Sweety'
+  'Watchara Wesapun Sup':'Sup Sophia'
+  'Siriluk Kemtonwong Sup':'Sup Sophia'
+  'Phetphailin Phoemlap Sup':'Sup Sophia'
+  'Chulawan Ontong Sup':'Sup Will'
+  'Chuleewan Sakulsermkaisri1':'Sup Will'
+  'Korakot Bunmalee Sup':'Sup Will'
+  'Jindarat Pramjai Sup':'Sup Will'
+  'Sup Sweety':'Sup Sweety'
+  'Sup Mignon':'Sup Sweety'
+  'Sup Will':'Sup Will'
+  'Sup Sophia':'Sup Sophia'
+  'Sup Jonas':'Sup Jonas'
+
+
+philippines:
+  group:
+    - 'Telesales'
+    - 'Telesales A'
+    - 'Telesales B'
+  email:
+    - 'caijun@weidu.ac.cn'
+    - 'jiayunhao1@weidu.ac.cn'
+    - 'zhangdongdong@weidu.ac.cn'
+    - 'yumingsheng@weidu.ac.cn'
+    - 'zhangjinyou@weidu.ac.cn'
+    - 'liufengfang@weidu.ac.cn'
+    - 'limingyue@weidu.ac.cn'
+    - 'lizheng@weidu.ac.cn'
+
+
+mexico:
+  group:
+    - 'Telesales'
+    - 'Telesales A'
+    - 'Telesales B'
+  email:
+    - 'tangting@weidu.ac.cn'
+    - 'zhangjinyou@weidu.ac.cn'
+    - 'liufengfang@weidu.ac.cn'
+    - 'cynthia@massgom.com'
+    - 'steve@massgom.com'
+    - 'xumingming@weidu.ac.cn'
+    - 'johnson@massgom.com'
+    - 'lizheng@weidu.ac.cn'
+
+
+thailand:
+  group:
+    - 'Telesales'
+    - 'Telesales A'
+    - 'Telesales B'
+  email:
+    - 'zhangjinyou@weidu.ac.cn'
+    - 'liufengfang@weidu.ac.cn'
+    - 'sweety@massgom.com'
+    - 'Will@massgom.com'
+    - 'mignon@massgom.com'
+    - 'lichongqing@weidu.ac.cn'
+    - 'wangling@weidu.ac.cn'
+    - 'limingyue@weidu.ac.cn'
+    - 'lizheng@weidu.ac.cn'
+
+
+indonesia:
+  group:
+    - 'Telesales'
+    - 'Telesales A'
+    - 'Telesales B'
+  email:
+    - 'zhangjinyou@weidu.ac.cn'
+    - 'liufengfang@weidu.ac.cn'

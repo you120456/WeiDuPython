@@ -1,0 +1,14 @@
+菲律宾:
+  '(ml.mission_group_name LIKE 'P%' AND ml.assign_asset_late_days = -2)
+        OR (ml.mission_group_name LIKE 'A-1%' AND ml.assign_asset_late_days = 1)
+        OR (ml.mission_group_name LIKE 'A-2%' AND ml.assign_asset_late_days = 1)
+        OR (ml.mission_group_name LIKE 'M2%' AND ml.assign_asset_late_days IN (1,31))
+        OR (ml.mission_group_name LIKE 'B1%' AND ml.assign_asset_late_days IN (1,8))
+        OR (ml.mission_group_name LIKE 'B2%' AND ml.assign_asset_late_days IN (1,16))'
+
+(ml.mission_group_name LIKE 'P%' AND ml.assign_asset_late_days = -2)
+        OR (ml.mission_group_name LIKE 'A-1%' AND ml.assign_asset_late_days = 1)
+        OR (ml.mission_group_name LIKE 'A-2%' AND ml.assign_asset_late_days = 1)
+        OR (ml.mission_group_name LIKE 'M2%' AND ml.assign_asset_late_days IN (1,31))
+        OR (ml.mission_group_name LIKE 'B1%' AND ml.assign_asset_late_days IN (1,8))
+        OR (ml.mission_group_name LIKE 'B2%' AND ml.assign_asset_late_days IN (1,16))

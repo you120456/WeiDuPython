@@ -1,4 +1,4 @@
-# import sc
+import sc
 import pandas as pd
 import json
 def 业务组(conn_ods):
@@ -10,9 +10,11 @@ def 业务组(conn_ods):
     df_json = pd.json_normalize(df['keyvalue_value'].apply(json.loads))
     for i in range(df_json.shape[1]):
         data = pd.concat([data, pd.json_normalize(df_json[i])[
-            ["assetGroupName", "groupNewAssetDays", "startOverdueDays", "endOverdueDays"]]])
-    data.columns = ["组别", "newday", "startOverdueDays", "endOverdueDays"]
+            ["assetGroupName", "groupNewAssetDays", "startOverdueDays", "endOverdueDays","delFlag"]]])
+
+    data.columns = ["组别", "newday", "startOverdueDays", "endOverdueDays","delFlag"]
+    data = data[data["delFlag"] == True]
     data["账龄"] = data["startOverdueDays"].astype(str) + "-" + data["endOverdueDays"].astype(str)
     data.reset_index(inplace=True)
     return data
-# 业务组(sc.bjst())
+# print(业务组(sc.mxg()).to_excel("./ada.xlsx"))

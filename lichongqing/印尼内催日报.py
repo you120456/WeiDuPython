@@ -98,9 +98,9 @@ def 过程():
 
     #主管架构汇总
     gb3=mg1.groupby(["asset_group_name","manager_user_no","manager_user_name","leader_user_no","leader_user_name","user_no","组员","user_id"],as_index= False).agg(
-        新案分案本金 = ("新案分案本金",'sum'),
-        新案回款本金 =("新案回款本金","sum"),
-        新案展期费用=("新案展期费用","sum"),
+        新案分案本金 = ("分案本金",'sum'),
+        新案回款本金 =("回款本金","sum"),
+        新案展期费用=("展期费用","sum"),
         总实收=("总实收","sum"),
         外呼次数=("外呼次数","sum"),
         通时=("通时","sum"),
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     #运行过程
     pa,dfs,mg1,dfm= 过程()
     rs = n1.renshu(mg1,df4,first_day,yesterday)
-    ce,tl,sp=gc1(pa,dfs,dfm,first_day,rs)
+    ce,tl,sp=gc1(pa,dfs,dfm,first_day,rs,current_file_name)
     top催回率 = n1.top催回率(ce)
     ce,resign = n1.rg(ce,today,current_file_name)
 
